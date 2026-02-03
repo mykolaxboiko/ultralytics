@@ -284,10 +284,11 @@ def on_pretrain_routine_start(trainer):
 
     # Per-trainer state to isolate concurrent training runs
     trainer._platform_model_id = None
+    trainer._platform_username = None
     trainer._platform_last_upload = time()
 
     project, name = _get_project_name(trainer)
-    url = f"{PLATFORM_URL}/{project}/{name}"
+    url = f"{PLATFORM_URL}/<username>/{project}/{name}"
     LOGGER.info(f"{PREFIX}Streaming to {url}")
 
     # Create callback to send console output to Platform
@@ -327,6 +328,7 @@ def on_pretrain_routine_start(trainer):
     )
     if response and response.get("modelId"):
         trainer._platform_model_id = response["modelId"]
+        trainer._platform_username = response.get("username")
     else:
         LOGGER.warning(f"{PREFIX}Failed to register training session - metrics may not sync to Platform")
 
@@ -454,7 +456,8 @@ def on_train_end(trainer):
         getattr(trainer, "_platform_model_id", None),
         retry=4,  # Critical, more retries
     )
-    url = f"{PLATFORM_URL}/{project}/{name}"
+    username = trainer._platform_username or "<username>"
+    url = f"{PLATFORM_URL}/{username}/{project}/{name}"
     LOGGER.info(f"{PREFIX}View results at {url}")
 
 
